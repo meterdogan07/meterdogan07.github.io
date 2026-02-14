@@ -61,7 +61,7 @@
 
 
             <td style="padding:2.5%;width:40%;max-width:40%">
-              <img style="width:100%;max-width:100%" alt="profile photo" src="images/circle_bw_crop.jpg">
+              <img style="width:100%;max-width:100%" alt="profile photo" src="https://media.licdn.com/dms/image/v2/D4D03AQFpRLGeZ0pq0g/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1719327591661?e=1772668800&v=beta&t=NXO4aGEsaIQNau9RVOO3OGU-fqNiXT_YwCYNAYyoDTw">
             </td>
           </tr>
         </table>
@@ -81,124 +81,7 @@
           </tr>
         </table>
 
-        <!-- Publications / Research posts -->
-        <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;">
-          {% for post in site.posts %}
-          {% for cat in post.categories %}
-          {% if cat == 'research' %}
-          <tr>
-            <td style="padding:2.5%;width:25%;vertical-align:middle;min-width:120px">
-              <img src="/tn{{post.image}}" alt="project image" style="width:auto; height:auto; max-width:100%;" />
-            </td>
-            <td style="padding:2.5%;width:75%;vertical-align:middle">
-              <h3>{{post.title}}</h3>
-              <br>
-              {{post.authors}}
-              <br>
-              <em>{{post.venue}}</em>, {{ post.date | date: "%Y" }}
-              <br>
-              {% if post.arxiv %}<a href="{{post.arxiv}}">arxiv</a> /{% endif %}
-              {% if post.paper %}<a href="{{post.paper}}">paper</a> /{% endif %}
-              {% if post.video %}<a href="{{post.video}}">video</a> /{% endif %}
-              {% if post.code %}<a href="{{post.code}}">code</a> /{% endif %}
-              {% if post.poster %}<a href="{{post.poster}}">poster</a> /{% endif %}
-              {% if post.slides %}<a href="{{post.slides}}">slides</a> /{% endif %}
-              {% if post.website %}<a href="{{post.website}}">website</a> /{% endif %}
-              {% if post.youtube %}<a href="{{post.youtube}}">youtube</a> /{% endif %}
-              <p></p>
-              {{ post.excerpt }}
-            </td>
-          </tr>
-          {% endif %}
-          {% endfor %}
-          {% endfor %}
-        </table>
-
-        <br><br><br>
-
-        <!-- Selected Projects (replace "Intel Projects") -->
-        <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;">
-          <tr>
-            <td style="padding:2.5%;width:100%;vertical-align:middle">
-              <h2>Selected Projects</h2>
-              <p>
-                A selection of projects and systems work (code, reports, and write-ups where available).
-              </p>
-            </td>
-          </tr>
-        </table>
-
-        <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;">
-          {% for post in site.posts %}
-          {% for cat in post.categories %}
-          {% if cat == 'projects' %}
-          <tr>
-            <td style="padding:2.5%;width:25%;vertical-align:middle;min-width:120px">
-              <img src="/tn{{post.image}}" alt="project image" style="width:auto; height:auto; max-width:100%;" />
-            </td>
-            <td style="padding:2.5%;width:75%;vertical-align:middle">
-              <h3>{{post.title}}</h3>
-              <br>
-              <em>{{post.course}}</em>
-              <br>
-              {{ post.date | date: "%Y-%m-%d" }}
-              <br>
-              {% if post.website %}<a href="{{post.website}}">website</a> /{% endif %}
-              {% if post.paper %}<a href="{{post.paper}}">paper</a> /{% endif %}
-              {% if post.code %}<a href="{{post.code}}">code</a> /{% endif %}
-              {% if post.slides %}<a href="{{post.slides}}">slides</a> /{% endif %}
-              {% if post.video %}<a href="{{post.video}}">video</a> /{% endif %}
-              <p></p>
-              {{ post.excerpt }}
-            </td>
-          </tr>
-          {% endif %}
-          {% endfor %}
-          {% endfor %}
-        </table>
-
-        <br><br><br>
-
-        <!-- Other posts -->
-        <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;">
-          <tr>
-            <td style="padding:2.5%;width:100%;vertical-align:middle">
-              <h2>Other</h2>
-              <p>
-                Coursework, notes, side projects, and miscellaneous posts.
-              </p>
-            </td>
-          </tr>
-        </table>
-
-        <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;">
-          {% for post in site.posts %}
-          {% for cat in post.categories %}
-          {% if cat != 'research' and cat != 'projects' %}
-          <tr>
-            <td style="padding:2.5%;width:25%;vertical-align:middle;min-width:120px">
-              <img src="/tn{{post.image}}" alt="project image" style="width:auto; height:auto; max-width:100%;" />
-            </td>
-            <td style="padding:2.5%;width:75%;vertical-align:middle">
-              <h3>{{post.title}}</h3>
-              <br>
-              <em>{{post.categories}} {{post.course}}</em>
-              <br>
-              {{ post.date | date: "%Y-%m-%d" }}
-              <br>
-              {% if post.website %}<a href="{{post.website}}">website</a> /{% endif %}
-              {% if post.paper %}<a href="{{post.paper}}">paper</a> /{% endif %}
-              {% if post.code %}<a href="{{post.code}}">code</a> /{% endif %}
-              {% if post.slides %}<a href="{{post.slides}}">slides</a> /{% endif %}
-              {% if post.video %}<a href="{{post.video}}">video</a> /{% endif %}
-              <p></p>
-              {{ post.excerpt }}
-            </td>
-          </tr>
-          {% endif %}
-          {% endfor %}
-          {% endfor %}
-        </table>
+       
 
         <!-- Footer -->
         <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;">
