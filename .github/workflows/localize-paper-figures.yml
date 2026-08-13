@@ -1,0 +1,97 @@
+name: Localize publication figures
+
+on:
+  push:
+    paths:
+      - '.github/workflows/localize-paper-figures.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  localize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install PDF tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils imagemagick
+
+      - name: Download paper figures
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p images/papers
+          UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36'
+
+          curl -A "$UA" -L --retry 3 --fail 'https://arxiv.org/html/2602.01128v1/x1.png' -o images/papers/tsdpo.png
+          curl -A "$UA" -L --retry 3 --fail 'https://arxiv.org/html/2605.30638v1/x1.png' -o images/papers/sbd.png
+          curl -A "$UA" -L --retry 3 --fail 'https://arxiv.org/html/2601.09039v1/x1.png' -o images/papers/tokenizers.png
+          curl -A "$UA" -L --retry 3 --fail 'https://arxiv.org/html/2505.21077v2/x1.png' -o images/papers/nbl.png
+          curl -A "$UA" -L --retry 3 --fail 'https://arxiv.org/html/2506.01913v3/x1.png' -o images/papers/ggnc.png
+          curl -A "$UA" -L --retry 3 --fail 'https://arxiv.org/html/2504.11558v3/x2.png' -o images/papers/ebd.png
+          curl -A "$UA" -L --retry 3 --fail 'https://emrecanacikgoz.github.io/Bridging-the-Bosphorus/assets/images/case3.png' -o images/papers/bosphorus.png
+
+          # The older Sensors paper predates arXiv's HTML figure export. Extract the
+          # paper's actual Fig. 2 (Kalman + ML event-detection method) from page 3.
+          curl -A "$UA" -L --retry 3 --fail 'https://arxiv.org/pdf/2306.00563' -o /tmp/nanomech.pdf
+          pdftoppm -f 3 -l 3 -singlefile -png -r 180 /tmp/nanomech.pdf /tmp/nanomech-page
+          pdftotext -f 3 -l 3 -bbox-layout /tmp/nanomech.pdf /tmp/nanomech.xml
+
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+          tree = ET.parse('/tmp/nanomech.xml')
+          root = tree.getroot()
+          ns = {'x':'http://www.w3.org/1999/xhtml'}
+          page = root.find('.//x:page', ns)
+          words = page.findall('.//x:word', ns)
+          caption_y = None
+          for i, w in enumerate(words[:-1]):
+              if (w.text or '').strip() == 'Fig.' and (words[i+1].text or '').strip().startswith('2'):
+                  caption_y = float(w.attrib['yMin'])
+                  break
+          if caption_y is None:
+              # Stable fallback for the published layout.
+              caption_y = 365.0
+          Path('/tmp/crop.txt').write_text(str(caption_y))
+          PY
+
+          CAPY=$(cat /tmp/crop.txt)
+          # PDF points -> 180 dpi pixels (2.5 px/pt). Crop the full-width method
+          # diagram immediately above the Fig. 2 caption, excluding surrounding text.
+          python3 - <<'PY'
+          from PIL import Image
+          capy=float(open('/tmp/crop.txt').read())
+          im=Image.open('/tmp/nanomech-page.png')
+          scale=180/72
+          x0=int(35*scale); x1=int(577*scale)
+          y1=int((capy-4)*scale)
+          y0=max(0,int((capy-225)*scale))
+          crop=im.crop((x0,y0,x1,y1))
+          bbox=crop.convert('RGB').getbbox()
+          if bbox:
+              crop=crop.crop(bbox)
+          crop.save('images/papers/nanomech.png')
+          PY
+
+          # Keep thumbnails compact while preserving the original aspect ratio.
+          for f in images/papers/*.png; do
+            convert "$f" -resize '1000x560>' -strip "$f"
+          done
+
+      - name: Commit localized figures
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- images/papers
+          if git diff --cached --quiet; then
+            echo 'No figure changes to commit.'
+            exit 0
+          fi
+          git commit -m 'Add local publication figure assets'
+          git push origin HEAD:master
