@@ -19,38 +19,42 @@
   <link rel="stylesheet" type="text/css" href="{{ site.baseurl }}/style.css" />
   <link rel="canonical" href="{{ page.url | replace:'index.html','' | prepend: site.baseurl | prepend: site.url }}">
   <link href="https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic" rel="stylesheet" type="text/css">
+
+  <style>
+    .publication-list { margin-top: 14px; }
+    .pub-row { display:flex; gap:22px; align-items:center; padding:17px 0; border-bottom:1px solid #eee; }
+    .pub-row:last-child { border-bottom:0; }
+    .pub-image { width:215px; min-width:215px; height:130px; display:flex; align-items:center; justify-content:center; overflow:hidden; border-radius:5px; background:#fafafa; }
+    .pub-image img { width:100%; height:100%; object-fit:contain; display:block; }
+    .pub-info { flex:1; line-height:1.45; }
+    .pub-title { font-size:16px; line-height:1.35; margin-bottom:4px; }
+    .pub-authors { margin-bottom:3px; }
+    .pub-venue { margin-bottom:4px; }
+    .pub-links a { margin-right:9px; }
+    .highlight { color:#b30000; font-weight:700; }
+    .preprint { color:#666; }
+    .edu-logo-td { width:170px; }
+    .logo-box { width:140px; height:70px; display:flex; align-items:center; justify-content:center; }
+    .logo-box img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
+    @media (max-width:650px) {
+      .pub-row { display:block; }
+      .pub-image { width:100%; min-width:0; height:175px; margin-bottom:12px; }
+    }
+  </style>
 </head>
 
 <body>
-  <table style="width:100%;max-width:800px;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;">
+  <table style="width:100%;max-width:850px;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;">
     <tr style="padding:0px">
       <td style="padding:0px">
 
-        <!-- Header / About -->
         <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;">
           <tr style="padding:0px">
             <td style="padding:2.5%;width:60%;vertical-align:middle">
-              <h1>
-                Mete Erdogan
-              </h1>
-          
-              <p> I am a first-year PhD student in Electrical Engineering at <b>Stanford University</b>, working with <b>Mert Pilanci</b> and <b>James Zou</b>. 
-                My research focuses on efficient ML systems and agentic AI. </p>
-          
-              <p> I am particularly interested in how language models can reason, adapt, use tools, and interact in complex environments. 
-                My work spans agentic AI, efficient sequence modeling, model compression, and methods for making large-scale learning systems 
-                more computationally and memory efficient. More broadly, I draw on ideas from optimization, information theory, and signal 
-                processing to develop scalable and adaptive learning methods. </p>
-          
-              <p>
-                Before Stanford, I worked at <b>EPFL</b> with 
-                <b>Volkan Cevher</b> on language model pruning, compression, and spectral interpretability 
-                (e.g., PCA/CCA), and non-Euclidean optimization methods for deep learning. 
-                I completed dual B.S. degrees in Electrical and Electronics Engineering and Computer Science 
-                at <b>Koç University</b>, where I worked with <b>Alper T. Erdogan</b> on deep learning theory and 
-                biologically plausible learning rules alternative to backpropagation. 
-              </p>
-          
+              <h1>Mete Erdogan</h1>
+              <p>I am a first-year PhD student in Electrical Engineering at <b>Stanford University</b>, working with <b>Mert Pilanci</b> and <b>James Zou</b>. My research focuses on efficient ML systems and agentic AI.</p>
+              <p>I am particularly interested in how language models can reason, adapt, use tools, and interact in complex environments. My work spans agentic AI, efficient sequence modeling, model compression, and methods for making large-scale learning systems more computationally and memory efficient. More broadly, I draw on ideas from optimization, information theory, and signal processing to develop scalable and adaptive learning methods.</p>
+              <p>Before Stanford, I worked at <b>EPFL</b> with <b>Volkan Cevher</b> on language model pruning, compression, spectral interpretability (e.g., PCA/CCA), and non-Euclidean optimization methods for deep learning. I completed dual B.S. degrees in Electrical and Electronics Engineering and Computer Science at <b>Koç University</b>, where I worked with <b>Alper T. Erdogan</b> on deep learning theory and biologically plausible learning rules alternative to backpropagation.</p>
               <p style="text-align:center">
                 <a href="mailto:merdogan@stanford.edu">Email</a> &nbsp;/&nbsp;
                 <a href="https://github.com/meterdogan07">GitHub</a> &nbsp;/&nbsp;
@@ -58,130 +62,169 @@
                 <a href="https://www.linkedin.com/in/meteerdogan/">LinkedIn</a>
               </p>
             </td>
-          
             <td style="padding:2.5%;width:40%;max-width:40%">
               <img style="width:90%;max-width:90%" alt="profile photo" src="images/1719327591661x.jpg">
             </td>
           </tr>
         </table>
 
-        <!-- Research Intro -->
         <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;">
           <tr>
             <td style="padding:2.5%;width:100%;vertical-align:middle">
               <h2>Research</h2>
-              <p>
-                <p> I am broadly interested in building capable, efficient, and adaptive AI systems. Current research directions include: 
-                </p> <p> (i) <b>Agentic AI</b> — studying how language models can reason, use tools, interact, and coordinate with other agents; 
-                </p> <p> (ii) <b>Efficient sequence modeling</b> — developing scalable attention, memory, and alternative sequence-modeling mechanisms for long-context reasoning and inference; \
-                </p> <p> (iii) <b>Efficient learning and model adaptation</b> — improving the computational and memory efficiency of training, adapting, and deploying large language and multimodal models. </p>
-              </p>
+              <p>I am broadly interested in building capable, efficient, and adaptive AI systems. Current research directions include:</p>
+              <p>(i) <b>Agentic AI</b> — studying how language models can reason, use tools, interact, and coordinate with other agents;</p>
+              <p>(ii) <b>Efficient sequence modeling</b> — developing scalable attention, memory, and alternative sequence-modeling mechanisms for long-context reasoning and inference;</p>
+              <p>(iii) <b>Efficient learning and model adaptation</b> — improving the computational and memory efficiency of training, adapting, and deploying large language and multimodal models.</p>
             </td>
           </tr>
         </table>
 
-       <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;">
+        <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;">
           <tr>
             <td style="padding:2.5%;width:100%;vertical-align:middle">
               <h2>Publications</h2>
-        
-              <ul style="padding-left:18px; margin-top:10px;">
-                <li style="margin-bottom:10px;">
-                  <b>Efficient Large Language Model Inference with Neural Block Linearization</b><br/>
-                  <span>Mete Erdogan, Francesco Tonin, Volkan Cevher.</span><br/>
-                  <em>NeurIPS 2025 (Main Track)</em>.
-                  <a href="https://arxiv.org/abs/2505.21077">arXiv</a>
-                  <!-- / <a href="#">pdf</a> / <a href="#">code</a> -->
-                </li>
-        
-                <li style="margin-bottom:10px;">
-                  <b>Generalized Gradient Norm Clipping &amp; Non-Euclidean (L0,L1)-Smoothness</b><br/>
-                  <span>T. Pethick, W. Xie, Mete Erdogan, K. Antonakopoulos, T. Silveti-Falls, Volkan Cevher.</span><br/>
-                  <em>NeurIPS 2025 <span style="color:#b30000;"><b>(Oral)</b></span></em>.
-                  <a href="https://arxiv.org/abs/2506.01913">arXiv</a>
-                </li>
-        
-                <li style="margin-bottom:10px;">
-                  <b>Error Broadcast and Decorrelation as a Potential Artificial and Natural Learning Mechanism</b><br/>
-                  <span>Mete Erdogan, Cengiz Pehlevan, Alper T. Erdogan.</span><br/>
-                  <em>NeurIPS 2025 <span style="color:#b30000;"><b>(Spotlight)</b></span></em>.
-                  <a href="https://arxiv.org/abs/2504.11558">arXiv</a>
-                </li>
-        
-                <li style="margin-bottom:10px;">
-                  <b>Bridging the Bosphorus: Leveraging Turkish Large Language Models through Strategies for Low-Resource Language Adaptation and Benchmarking</b><br/>
-                  <span>E. Acikgoz, Mete Erdogan, Deniz Yuret.</span><br/>
-                  <em>EMNLP 2024 MRL Workshop</em>.
-                  <a href="https://arxiv.org/abs/2405.04685">arXiv</a>
-                </li>
-        
-                <li style="margin-bottom:10px;">
-                  <b>Machine Learning and Kalman Filtering for Nanomechanical Mass Spectrometry</b><br/>
-                  <span>Mete Erdogan, N. B. Baytekin, S. E. Coban, Alper Demir.</span><br/>
-                  <em>IEEE Sensors Journal (2024)</em>.
-                  <a href="https://ieeexplore.ieee.org/abstract/document/10399336">IEEE</a>
-                </li>
-              </ul>
+              <div class="publication-list">
+
+                <div class="pub-row">
+                  <div class="pub-image">
+                    <a href="https://arxiv.org/abs/2602.01128">
+                      <img loading="lazy" src="https://arxiv.org/html/2602.01128v1/x1.png" alt="Main figure from Tangent Space Fine-Tuning" onerror="this.parentElement.parentElement.style.display='none';">
+                    </a>
+                  </div>
+                  <div class="pub-info">
+                    <div class="pub-title"><b>Tangent Space Fine-Tuning for Directional Preference Alignment in Large Language Models</b></div>
+                    <div class="pub-authors"><b>Mete Erdogan</b>.</div>
+                    <div class="pub-venue"><em class="preprint">Preprint, 2026</em>.</div>
+                    <div class="pub-links"><a href="https://arxiv.org/abs/2602.01128">arXiv</a></div>
+                  </div>
+                </div>
+
+                <div class="pub-row">
+                  <div class="pub-image">
+                    <a href="https://arxiv.org/abs/2605.30638">
+                      <img loading="lazy" src="https://arxiv.org/html/2605.30638v1/x1.png" alt="Main figure from Score Broadcast and Decorrelation" onerror="this.parentElement.parentElement.style.display='none';">
+                    </a>
+                  </div>
+                  <div class="pub-info">
+                    <div class="pub-title"><b>Score Broadcast and Decorrelation: A General Framework for Broadcast-Based Credit Assignment</b></div>
+                    <div class="pub-authors">Mustafa Uzun, <b>Mete Erdogan</b>, Cengiz Pehlevan, Alper T. Erdogan.</div>
+                    <div class="pub-venue"><em class="preprint">Preprint, 2026</em>.</div>
+                    <div class="pub-links"><a href="https://arxiv.org/abs/2605.30638">arXiv</a></div>
+                  </div>
+                </div>
+
+                <div class="pub-row">
+                  <div class="pub-image">
+                    <a href="https://arxiv.org/abs/2601.09039">
+                      <img loading="lazy" src="https://arxiv.org/html/2601.09039v1/x1.png" alt="Main figure from An Information-Theoretic Perspective on LLM Tokenizers" onerror="this.parentElement.parentElement.style.display='none';">
+                    </a>
+                  </div>
+                  <div class="pub-info">
+                    <div class="pub-title"><b>An Information-Theoretic Perspective on LLM Tokenizers</b></div>
+                    <div class="pub-authors"><b>Mete Erdogan</b>, Abhiram Gorle, Shubham Chandak, Mert Pilanci, Tsachy Weissman.</div>
+                    <div class="pub-venue"><em>IEEE International Symposium on Information Theory (ISIT), 2026</em>.</div>
+                    <div class="pub-links"><a href="https://arxiv.org/abs/2601.09039">arXiv</a></div>
+                  </div>
+                </div>
+
+                <div class="pub-row">
+                  <div class="pub-image">
+                    <a href="https://arxiv.org/abs/2505.21077">
+                      <img loading="lazy" src="https://arxiv.org/html/2505.21077v2/x1.png" alt="Neural Block Linearization method overview" onerror="this.parentElement.parentElement.style.display='none';">
+                    </a>
+                  </div>
+                  <div class="pub-info">
+                    <div class="pub-title"><b>Efficient Large Language Model Inference with Neural Block Linearization</b></div>
+                    <div class="pub-authors"><b>Mete Erdogan</b>, Francesco Tonin, Volkan Cevher.</div>
+                    <div class="pub-venue"><em>NeurIPS 2025 (Main Conference Track)</em>.</div>
+                    <div class="pub-links"><a href="https://arxiv.org/abs/2505.21077">arXiv</a> <a href="https://github.com/LIONS-EPFL/NBL">code</a></div>
+                  </div>
+                </div>
+
+                <div class="pub-row">
+                  <div class="pub-image">
+                    <a href="https://arxiv.org/abs/2506.01913">
+                      <img loading="lazy" src="https://arxiv.org/html/2506.01913v3/x1.png" alt="Main figure from Generalized Gradient Norm Clipping" onerror="this.parentElement.parentElement.style.display='none';">
+                    </a>
+                  </div>
+                  <div class="pub-info">
+                    <div class="pub-title"><b>Generalized Gradient Norm Clipping &amp; Non-Euclidean (L0,L1)-Smoothness</b></div>
+                    <div class="pub-authors">Thomas Pethick, Wanyun Xie, <b>Mete Erdogan</b>, Kimon Antonakopoulos, Antonio Silveti-Falls, Volkan Cevher.</div>
+                    <div class="pub-venue"><em>NeurIPS 2025 <span class="highlight">(Oral)</span></em>.</div>
+                    <div class="pub-links"><a href="https://arxiv.org/abs/2506.01913">arXiv</a> <a href="https://github.com/LIONS-EPFL/ClippedScion">code</a></div>
+                  </div>
+                </div>
+
+                <div class="pub-row">
+                  <div class="pub-image">
+                    <a href="https://arxiv.org/abs/2504.11558">
+                      <img loading="lazy" src="https://arxiv.org/html/2504.11558v3/x2.png" alt="Error Broadcast and Decorrelation learning mechanism" onerror="this.parentElement.parentElement.style.display='none';">
+                    </a>
+                  </div>
+                  <div class="pub-info">
+                    <div class="pub-title"><b>Error Broadcast and Decorrelation as a Potential Artificial and Natural Learning Mechanism</b></div>
+                    <div class="pub-authors"><b>Mete Erdogan</b>, Cengiz Pehlevan, Alper T. Erdogan.</div>
+                    <div class="pub-venue"><em>NeurIPS 2025 <span class="highlight">(Spotlight)</span></em>.</div>
+                    <div class="pub-links"><a href="https://arxiv.org/abs/2504.11558">arXiv</a></div>
+                  </div>
+                </div>
+
+                <div class="pub-row">
+                  <div class="pub-image">
+                    <a href="https://arxiv.org/abs/2405.04685">
+                      <img loading="lazy" src="https://arxiv.org/html/2405.04685v1/x1.png" alt="Main figure from Bridging the Bosphorus" onerror="this.parentElement.parentElement.style.display='none';">
+                    </a>
+                  </div>
+                  <div class="pub-info">
+                    <div class="pub-title"><b>Bridging the Bosphorus: Advancing Turkish Large Language Models through Strategies for Low-Resource Language Adaptation and Benchmarking</b></div>
+                    <div class="pub-authors">Emre Can Acikgoz, <b>Mete Erdogan</b>, Deniz Yuret.</div>
+                    <div class="pub-venue"><em>EMNLP 2024 MRL Workshop</em>.</div>
+                    <div class="pub-links"><a href="https://arxiv.org/abs/2405.04685">arXiv</a></div>
+                  </div>
+                </div>
+
+                <div class="pub-row">
+                  <div class="pub-info">
+                    <div class="pub-title"><b>Machine Learning and Kalman Filtering for Nanomechanical Mass Spectrometry</b></div>
+                    <div class="pub-authors"><b>Mete Erdogan</b>, N. B. Baytekin, S. E. Coban, Alper Demir.</div>
+                    <div class="pub-venue"><em>IEEE Sensors Journal, 2024</em>.</div>
+                    <div class="pub-links"><a href="https://ieeexplore.ieee.org/abstract/document/10399336">IEEE</a></div>
+                  </div>
+                </div>
+
+              </div>
             </td>
-          </tr>    
+          </tr>
         </table>
 
-        <style>
-          .edu-logo-td { width: 170px; }  /* controls how far the text starts */
-          .logo-box{
-            width: 140px;
-            height: 70px;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-          }
-          .logo-box img{
-            max-width:100%;
-            max-height:100%;
-            object-fit:contain;
-            display:block;
-          }
-        </style>
-        
         <table width="100%" align="center" border="0" cellpadding="20">
-          <tr>
-              <td>
-                <h2>Education</h2>
-              </td>
-            </tr>
+          <tr><td><h2>Education</h2></td></tr>
           <tbody>
             <tr>
               <td class="edu-logo-td" style="padding:20px;vertical-align:middle;">
-                <div class="logo-box">
-                  <img src="https://dorm2dorm.com/wp-content/uploads/2024/10/stanford-university-logo.png" alt="Stanford logo">
-                </div>
+                <div class="logo-box"><img src="https://dorm2dorm.com/wp-content/uploads/2024/10/stanford-university-logo.png" alt="Stanford logo"></div>
               </td>
               <td style="padding:20px;vertical-align:middle;">
                 <div>PhD Student in Electrical Engineering</div>
                 <div>Stanford University (2025–Present)</div>
               </td>
             </tr>
-        
             <tr>
               <td class="edu-logo-td" style="padding:20px;vertical-align:middle;">
-                <div class="logo-box">
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/9/95/Logo_EPFL_2019.svg" alt="EPFL logo">
-                </div>
+                <div class="logo-box"><img src="https://upload.wikimedia.org/wikipedia/commons/9/95/Logo_EPFL_2019.svg" alt="EPFL logo"></div>
               </td>
               <td style="padding:20px;vertical-align:middle;">
                 <div>Master's Valorization Program - Research Intern</div>
                 <div>EPFL (2024–2025)</div>
               </td>
             </tr>
-        
             <tr>
               <td class="edu-logo-td" style="padding:20px;vertical-align:middle;">
-                <div class="logo-box">
-                  <img src="https://upload.wikimedia.org/wikipedia/en/2/24/Ko%C3%A7_University_logo.svg" alt="Koç University logo">
-                </div>
+                <div class="logo-box"><img src="https://upload.wikimedia.org/wikipedia/en/2/24/Ko%C3%A7_University_logo.svg" alt="Koç University logo"></div>
               </td>
               <td style="padding:20px;vertical-align:middle;">
-                <div>B.Sc. Electrical & Electronics Engineering + Computer Science</div>
+                <div>B.Sc. Electrical &amp; Electronics Engineering + Computer Science</div>
                 <div>Koç University (2019–2024)</div>
               </td>
             </tr>
