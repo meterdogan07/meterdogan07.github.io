@@ -1,0 +1,49 @@
+name: Inline profile hover image
+
+on:
+  push:
+    paths:
+      - '.github/workflows/inline-profile-hover.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inline mosaic JPEG into homepage
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          svg_path = Path('docs/images/profile-mosaic-hover.svg')
+          page_path = Path('docs/index.html')
+          svg = svg_path.read_text()
+          m = re.search(r'href="(data:image/jpeg;base64,[^"]+)"', svg)
+          if not m:
+              raise SystemExit('Could not find embedded JPEG in SVG')
+
+          page = page_path.read_text()
+          old = 'src="images/profile-mosaic-hover.svg"'
+          if old not in page:
+              raise SystemExit('Expected hover SVG source not found')
+          page = page.replace(old, f'src="{m.group(1)}"', 1)
+          page_path.write_text(page)
+
+          svg_path.unlink(missing_ok=True)
+          Path('docs/images/profile-mosaic-hover.jpg').unlink(missing_ok=True)
+          Path('images/profile-mosaic-hover.jpg').unlink(missing_ok=True)
+          PY
+          rm .github/workflows/inline-profile-hover.yml
+      - name: Commit fix
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Inline mosaic profile hover image'
+          git push origin HEAD:master
