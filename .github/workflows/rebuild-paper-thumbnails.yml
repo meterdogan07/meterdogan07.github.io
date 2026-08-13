@@ -18,7 +18,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y poppler-utils imagemagick python3-pil
-          python3 -m pip install --user pymupdf
+          python3 -m pip install --user pymupdf numpy
 
       - name: Rebuild thumbnails from paper sources
         shell: bash
@@ -89,17 +89,12 @@ jobs:
                   raise RuntimeError(f'caption not found: {pdf_path} fig {fig_no}')
               pi,page,cap=found
               scale=3.0
-              # Render everything above caption, excluding headers/margins.
               clip=fitz.Rect(18, 32, page.rect.width-18, max(34,cap.y0-2))
               pix=page.get_pixmap(matrix=fitz.Matrix(scale,scale),clip=clip,alpha=False)
               im=Image.open(BytesIO(pix.tobytes('png'))).convert('RGB')
               a=np.asarray(im)
               gray=(0.299*a[:,:,0]+0.587*a[:,:,1]+0.114*a[:,:,2])
-              ink=(gray<242)
-              row=ink.sum(axis=1)
-              # A true separator is a nearly-empty horizontal band. Search upward
-              # from the caption for the closest band >= 12px, but ignore the small
-              # whitespace immediately between figure and caption.
+              row=(gray<242).sum(axis=1)
               blank=row <= max(2,int(im.width*0.0015))
               bands=[]; s=None
               for i,b in enumerate(blank):
@@ -109,16 +104,13 @@ jobs:
                       if e-s>=12: bands.append((s,e))
                       s=None
               bottom=im.height
-              # Skip bands within ~10 px of caption; choose nearest earlier separator.
               candidates=[b for b in bands if b[1] < bottom-12]
               if candidates:
                   top=candidates[-1][1]
               else:
-                  # top-of-page figure fallback
                   nonblank=np.where(row>2)[0]
                   top=int(nonblank[0]) if len(nonblank) else 0
               crop=im.crop((0,top,im.width,bottom))
-              # Trim outer white margin only.
               bg=Image.new('RGB',crop.size,'white')
               diff=ImageChops.difference(crop,bg).convert('L')
               bbox=diff.point(lambda p:255 if p>10 else 0).getbbox()
@@ -130,7 +122,6 @@ jobs:
           exact_figure_crop('/tmp/2405.04685.pdf','images/papers-v2/bosphorus.png',1)
           PY
 
-          # Normalize only maximum dimensions; never crop the artwork.
           for f in images/papers-v2/*.png; do
             convert "$f" -resize '1400x700>' -strip "$f"
           done
