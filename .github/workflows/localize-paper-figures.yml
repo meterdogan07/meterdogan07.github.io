@@ -22,45 +22,37 @@ jobs:
           sudo apt-get install -y imagemagick python3-pil
           python3 -m pip install --user pymupdf
 
-      - name: Download paper figures
+      - name: Extract actual figures from papers
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p images/papers
           UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36'
 
-          fetch_fig () {
-            out="$1"; shift
-            for url in "$@"; do
-              echo "Trying $url"
-              if curl -A "$UA" -L --retry 2 --fail "$url" -o "$out"; then
-                return 0
-              fi
-            done
-            echo "Could not fetch $out" >&2
-            return 1
-          }
-
-          fetch_fig images/papers/tsdpo.png \
-            'https://arxiv.org/html/2602.01128/x1.png' \
-            'https://arxiv.org/html/2602.01128v1/x1.png'
-
+          curl -A "$UA" -L --retry 3 --fail 'https://arxiv.org/pdf/2602.01128' -o /tmp/tsdpo.pdf
           curl -A "$UA" -L --retry 3 --fail 'https://arxiv.org/pdf/2605.30638' -o /tmp/sbd.pdf
           curl -A "$UA" -L --retry 3 --fail 'https://arxiv.org/pdf/2601.09039' -o /tmp/tokenizers.pdf
+          curl -A "$UA" -L --retry 3 --fail 'https://arxiv.org/pdf/2505.21077' -o /tmp/nbl.pdf
+          curl -A "$UA" -L --retry 3 --fail 'https://arxiv.org/pdf/2506.01913' -o /tmp/ggnc.pdf
+          curl -A "$UA" -L --retry 3 --fail 'https://arxiv.org/pdf/2504.11558' -o /tmp/ebd.pdf
+          curl -A "$UA" -L --retry 3 --fail 'https://arxiv.org/pdf/2405.04685' -o /tmp/bosphorus.pdf
           curl -A "$UA" -L --retry 3 --fail 'https://arxiv.org/pdf/2306.00563' -o /tmp/nanomech.pdf
 
           python3 - <<'PY'
-          import fitz
+          import pymupdf as fitz
           from PIL import Image, ImageChops
           from io import BytesIO
 
-          def extract_figure(pdf_path, out_path, figure_number, height_pt, preferred_page=None):
+          def extract_figure(pdf_path, out_path, figure_number=1, height_pt=250, preferred_page=None):
               doc = fitz.open(pdf_path)
-              candidates = [f"Figure {figure_number}", f"Fig. {figure_number}", f"Fig {figure_number}"]
-              found = None
+              candidates = [
+                  f"Figure {figure_number}", f"Figure {figure_number}:",
+                  f"Fig. {figure_number}", f"Fig. {figure_number}.", f"Fig {figure_number}"
+              ]
               page_order = list(range(len(doc)))
               if preferred_page is not None and 0 <= preferred_page < len(doc):
                   page_order = [preferred_page] + [i for i in page_order if i != preferred_page]
+              found = None
               for pi in page_order:
                   page = doc[pi]
                   for needle in candidates:
@@ -71,43 +63,43 @@ jobs:
                   if found:
                       break
               if not found:
-                  raise RuntimeError(f"Could not locate figure {figure_number} caption in {pdf_path}")
+                  raise RuntimeError(f"Could not locate Figure {figure_number} in {pdf_path}")
+
               page, caption = found
-              margin = 28
-              clip = fitz.Rect(margin, max(0, caption.y0-height_pt), page.rect.width-margin, max(1, caption.y0-3))
+              margin = 25
+              clip = fitz.Rect(
+                  margin,
+                  max(0, caption.y0 - height_pt),
+                  page.rect.width - margin,
+                  max(1, caption.y0 - 3),
+              )
               pix = page.get_pixmap(matrix=fitz.Matrix(2.5, 2.5), clip=clip, alpha=False)
               im = Image.open(BytesIO(pix.tobytes('png'))).convert('RGB')
+
+              # Only trim white margin; never alter/replace figure contents.
               bg = Image.new('RGB', im.size, 'white')
               diff = ImageChops.difference(im, bg).convert('L')
               bbox = diff.point(lambda p: 255 if p > 10 else 0).getbbox()
               if bbox:
                   im = im.crop(bbox)
-              im.save(out_path)
+              im.thumbnail((1000, 560), Image.Resampling.LANCZOS)
+              im.save(out_path, optimize=True)
 
-          extract_figure('/tmp/sbd.pdf', 'images/papers/sbd.png', 1, 255)
-          extract_figure('/tmp/tokenizers.pdf', 'images/papers/tokenizers.png', 1, 245)
-          extract_figure('/tmp/nanomech.pdf', 'images/papers/nanomech.png', 2, 225, preferred_page=2)
+          # Use each paper's lead/main figure. The Sensors paper's Fig. 2 is its
+          # Kalman + ML event-prediction pipeline and is more representative than Fig. 1.
+          specs = [
+              ('/tmp/tsdpo.pdf',      'images/papers/tsdpo.png',      1, 260, None),
+              ('/tmp/sbd.pdf',        'images/papers/sbd.png',        1, 260, None),
+              ('/tmp/tokenizers.pdf', 'images/papers/tokenizers.png', 1, 260, None),
+              ('/tmp/nbl.pdf',        'images/papers/nbl.png',        1, 260, None),
+              ('/tmp/ggnc.pdf',       'images/papers/ggnc.png',       1, 260, None),
+              ('/tmp/ebd.pdf',        'images/papers/ebd.png',        1, 260, None),
+              ('/tmp/bosphorus.pdf',  'images/papers/bosphorus.png',  1, 260, None),
+              ('/tmp/nanomech.pdf',   'images/papers/nanomech.png',   2, 230, 2),
+          ]
+          for spec in specs:
+              extract_figure(*spec)
           PY
-
-          fetch_fig images/papers/nbl.png \
-            'https://arxiv.org/html/2505.21077/x1.png' \
-            'https://arxiv.org/html/2505.21077v2/x1.png'
-
-          fetch_fig images/papers/ggnc.png \
-            'https://arxiv.org/html/2506.01913/x1.png' \
-            'https://arxiv.org/html/2506.01913v3/x1.png'
-
-          fetch_fig images/papers/ebd.png \
-            'https://arxiv.org/html/2504.11558/x2.png' \
-            'https://arxiv.org/html/2504.11558v3/x2.png'
-
-          fetch_fig images/papers/bosphorus.png \
-            'https://emrecanacikgoz.github.io/Bridging-the-Bosphorus/assets/images/case3.png' \
-            'https://arxiv.org/html/2405.04685/x1.png'
-
-          for f in images/papers/*.png; do
-            convert "$f" -resize '1000x560>' -strip "$f"
-          done
 
       - name: Commit localized figures
         run: |
