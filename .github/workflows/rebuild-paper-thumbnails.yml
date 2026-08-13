@@ -1,0 +1,144 @@
+name: Rebuild exact paper thumbnails
+
+on:
+  push:
+    paths:
+      - '.github/workflows/rebuild-paper-thumbnails.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils imagemagick python3-pil
+          python3 -m pip install --user pymupdf
+
+      - name: Rebuild thumbnails from paper sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p images/papers-v2 /tmp/papersrc
+          UA='Mozilla/5.0'
+
+          unpack_src () {
+            id="$1"
+            mkdir -p "/tmp/papersrc/$id"
+            curl -L --fail --retry 3 -A "$UA" "https://export.arxiv.org/e-print/$id" -o "/tmp/$id.src"
+            tar -xf "/tmp/$id.src" -C "/tmp/papersrc/$id"
+          }
+          render_pdf () {
+            in="$1"; out="$2"
+            pdftoppm -png -singlefile -r 180 "$in" "$out" >/dev/null 2>&1
+          }
+
+          for id in 2602.01128 2601.09039 2505.21077 2506.01913 2306.00563; do unpack_src "$id"; done
+
+          # TS-DPO Figure 1: exact two source panels from the paper.
+          render_pdf /tmp/papersrc/2602.01128/figs/pareto2.pdf /tmp/ts1
+          render_pdf /tmp/papersrc/2602.01128/figs/pareto1.pdf /tmp/ts2
+          convert /tmp/ts1.png /tmp/ts2.png +append -background white -gravity center -splice 24x0 images/papers-v2/tsdpo.png
+
+          # Tokenizer Figure 1: exact two source panels.
+          convert /tmp/papersrc/2601.09039/figures_new/scatter_plot_new.png \
+                  /tmp/papersrc/2601.09039/figures_new/lang-robust-new.png \
+                  +append -background white -gravity center -splice 24x0 images/papers-v2/tokenizers.png
+
+          # NBL Figure 1: exact original vector figure.
+          render_pdf /tmp/papersrc/2505.21077/figures/fig1.pdf /tmp/nbl
+          cp /tmp/nbl.png images/papers-v2/nbl.png
+
+          # GGNC headline experiment figure: exact two source panels.
+          render_pdf /tmp/papersrc/2506.01913/figs/cifar10_unconstrained.pdf /tmp/gg1
+          render_pdf /tmp/papersrc/2506.01913/figs/cifar10_dual_norm.pdf /tmp/gg2
+          convert /tmp/gg1.png /tmp/gg2.png +append -background white -gravity center -splice 24x0 images/papers-v2/ggnc.png
+
+          # Sensors method diagram: exact original Figure 2 artwork.
+          render_pdf /tmp/papersrc/2306.00563/diagrams_kalman.pdf /tmp/nano
+          cp /tmp/nano.png images/papers-v2/nanomech.png
+
+          # For figures partly drawn in LaTeX/TikZ, crop the complete rendered figure
+          # using the caption position plus the nearest real whitespace separator above it.
+          for id in 2605.30638 2504.11558 2405.04685; do
+            curl -L --fail --retry 3 -A "$UA" "https://arxiv.org/pdf/$id" -o "/tmp/$id.pdf"
+          done
+
+          python3 - <<'PY'
+          import pymupdf as fitz
+          from PIL import Image, ImageChops
+          from io import BytesIO
+          import numpy as np
+
+          def exact_figure_crop(pdf_path, out_path, fig_no=1):
+              doc=fitz.open(pdf_path)
+              found=None
+              needles=[f'Figure {fig_no}:',f'Figure {fig_no}.',f'Fig. {fig_no}',f'Figure {fig_no}']
+              for pi,page in enumerate(doc):
+                  for needle in needles:
+                      hits=page.search_for(needle)
+                      if hits:
+                          found=(pi,page,hits[0]); break
+                  if found: break
+              if not found:
+                  raise RuntimeError(f'caption not found: {pdf_path} fig {fig_no}')
+              pi,page,cap=found
+              scale=3.0
+              # Render everything above caption, excluding headers/margins.
+              clip=fitz.Rect(18, 32, page.rect.width-18, max(34,cap.y0-2))
+              pix=page.get_pixmap(matrix=fitz.Matrix(scale,scale),clip=clip,alpha=False)
+              im=Image.open(BytesIO(pix.tobytes('png'))).convert('RGB')
+              a=np.asarray(im)
+              gray=(0.299*a[:,:,0]+0.587*a[:,:,1]+0.114*a[:,:,2])
+              ink=(gray<242)
+              row=ink.sum(axis=1)
+              # A true separator is a nearly-empty horizontal band. Search upward
+              # from the caption for the closest band >= 12px, but ignore the small
+              # whitespace immediately between figure and caption.
+              blank=row <= max(2,int(im.width*0.0015))
+              bands=[]; s=None
+              for i,b in enumerate(blank):
+                  if b and s is None: s=i
+                  if (not b or i==len(blank)-1) and s is not None:
+                      e=i if not b else i+1
+                      if e-s>=12: bands.append((s,e))
+                      s=None
+              bottom=im.height
+              # Skip bands within ~10 px of caption; choose nearest earlier separator.
+              candidates=[b for b in bands if b[1] < bottom-12]
+              if candidates:
+                  top=candidates[-1][1]
+              else:
+                  # top-of-page figure fallback
+                  nonblank=np.where(row>2)[0]
+                  top=int(nonblank[0]) if len(nonblank) else 0
+              crop=im.crop((0,top,im.width,bottom))
+              # Trim outer white margin only.
+              bg=Image.new('RGB',crop.size,'white')
+              diff=ImageChops.difference(crop,bg).convert('L')
+              bbox=diff.point(lambda p:255 if p>10 else 0).getbbox()
+              if bbox: crop=crop.crop(bbox)
+              crop.save(out_path)
+
+          exact_figure_crop('/tmp/2605.30638.pdf','images/papers-v2/sbd.png',1)
+          exact_figure_crop('/tmp/2504.11558.pdf','images/papers-v2/ebd.png',1)
+          exact_figure_crop('/tmp/2405.04685.pdf','images/papers-v2/bosphorus.png',1)
+          PY
+
+          # Normalize only maximum dimensions; never crop the artwork.
+          for f in images/papers-v2/*.png; do
+            convert "$f" -resize '1400x700>' -strip "$f"
+          done
+
+      - name: Commit rebuilt thumbnails
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- images/papers-v2
+          git commit -m 'Add exact publication thumbnail assets'
+          git push origin HEAD:master
