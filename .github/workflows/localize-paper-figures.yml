@@ -16,10 +16,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install PDF tools
+      - name: Install image tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y poppler-utils imagemagick python3-pil
+          sudo apt-get install -y imagemagick python3-pil
+          python3 -m pip install --user pymupdf
 
       - name: Download paper figures
         shell: bash
@@ -44,45 +45,52 @@ jobs:
             'https://arxiv.org/html/2602.01128/x1.png' \
             'https://arxiv.org/html/2602.01128v1/x1.png'
 
-          # SBD currently has no arXiv HTML image export. Extract its actual Figure 1
-          # directly from the PDF by locating the Figure 1 caption and cropping above it.
           curl -A "$UA" -L --retry 3 --fail 'https://arxiv.org/pdf/2605.30638' -o /tmp/sbd.pdf
-          pdftotext -bbox-layout /tmp/sbd.pdf /tmp/sbd.xml
+          curl -A "$UA" -L --retry 3 --fail 'https://arxiv.org/pdf/2306.00563' -o /tmp/nanomech.pdf
+
           python3 - <<'PY'
-          import xml.etree.ElementTree as ET
-          from pathlib import Path
-          root=ET.parse('/tmp/sbd.xml').getroot()
-          ns={'x':'http://www.w3.org/1999/xhtml'}
-          pages=root.findall('.//x:page',ns)
-          found=None
-          for pi,page in enumerate(pages,1):
-              words=page.findall('.//x:word',ns)
-              texts=[(w.text or '').strip() for w in words]
-              for i,t in enumerate(texts):
-                  nxt=texts[i+1] if i+1<len(texts) else ''
-                  if (t in ('Figure','Fig.','Fig') and nxt.lstrip('(').startswith('1')) or t.startswith('Figure1'):
-                      found=(pi,float(words[i].attrib['yMin']),float(page.attrib['width']))
+          import fitz
+          from PIL import Image, ImageChops
+          from io import BytesIO
+
+          def extract_figure(pdf_path, out_path, figure_number, height_pt, preferred_page=None):
+              doc = fitz.open(pdf_path)
+              candidates = [f"Figure {figure_number}", f"Fig. {figure_number}", f"Fig {figure_number}"]
+              found = None
+              page_order = list(range(len(doc)))
+              if preferred_page is not None and 0 <= preferred_page < len(doc):
+                  page_order = [preferred_page] + [i for i in page_order if i != preferred_page]
+              for pi in page_order:
+                  page = doc[pi]
+                  for needle in candidates:
+                      rects = page.search_for(needle)
+                      if rects:
+                          found = (page, rects[0])
+                          break
+                  if found:
                       break
-              if found: break
-          if not found:
-              raise SystemExit('Could not locate SBD Figure 1 caption')
-          Path('/tmp/sbd-crop.txt').write_text(','.join(map(str,found)))
-          PY
-          IFS=',' read -r SBDPAGE SBDY SBDW < /tmp/sbd-crop.txt
-          pdftoppm -f "$SBDPAGE" -l "$SBDPAGE" -singlefile -png -r 180 /tmp/sbd.pdf /tmp/sbd-page
-          python3 - <<'PY'
-          from PIL import Image,ImageChops
-          page,y,width=map(float,open('/tmp/sbd-crop.txt').read().split(','))
-          im=Image.open('/tmp/sbd-page.png').convert('RGB')
-          scale=180/72
-          x0=int(28*scale); x1=int((width-28)*scale)
-          y1=int((y-4)*scale); y0=max(0,int((y-255)*scale))
-          crop=im.crop((x0,y0,x1,y1))
-          bg=Image.new('RGB',crop.size,'white')
-          diff=ImageChops.difference(crop,bg).convert('L')
-          bbox=diff.point(lambda p:255 if p>10 else 0).getbbox()
-          if bbox: crop=crop.crop(bbox)
-          crop.save('images/papers/sbd.png')
+              if not found:
+                  raise RuntimeError(f"Could not locate figure {figure_number} caption in {pdf_path}")
+              page, caption = found
+              margin = 28
+              clip = fitz.Rect(
+                  margin,
+                  max(0, caption.y0 - height_pt),
+                  page.rect.width - margin,
+                  max(1, caption.y0 - 3),
+              )
+              pix = page.get_pixmap(matrix=fitz.Matrix(2.5, 2.5), clip=clip, alpha=False)
+              im = Image.open(BytesIO(pix.tobytes('png'))).convert('RGB')
+              bg = Image.new('RGB', im.size, 'white')
+              diff = ImageChops.difference(im, bg).convert('L')
+              bbox = diff.point(lambda p: 255 if p > 10 else 0).getbbox()
+              if bbox:
+                  im = im.crop(bbox)
+              im.save(out_path)
+
+          # Actual paper figures, not decorative substitutes.
+          extract_figure('/tmp/sbd.pdf', 'images/papers/sbd.png', 1, 255)
+          extract_figure('/tmp/nanomech.pdf', 'images/papers/nanomech.png', 2, 225, preferred_page=2)
           PY
 
           fetch_fig images/papers/tokenizers.png \
@@ -104,31 +112,6 @@ jobs:
           fetch_fig images/papers/bosphorus.png \
             'https://emrecanacikgoz.github.io/Bridging-the-Bosphorus/assets/images/case3.png' \
             'https://arxiv.org/html/2405.04685/x1.png'
-
-          # Extract the Sensors paper's actual Fig. 2 (Kalman + ML method) from its PDF.
-          curl -A "$UA" -L --retry 3 --fail 'https://arxiv.org/pdf/2306.00563' -o /tmp/nanomech.pdf
-          pdftoppm -f 3 -l 3 -singlefile -png -r 180 /tmp/nanomech.pdf /tmp/nanomech-page
-          pdftotext -f 3 -l 3 -bbox-layout /tmp/nanomech.pdf /tmp/nanomech.xml
-          python3 - <<'PY'
-          import xml.etree.ElementTree as ET
-          from pathlib import Path
-          root=ET.parse('/tmp/nanomech.xml').getroot(); ns={'x':'http://www.w3.org/1999/xhtml'}
-          page=root.find('.//x:page',ns); words=page.findall('.//x:word',ns) if page is not None else []
-          caption_y=None
-          for i,w in enumerate(words[:-1]):
-              if (w.text or '').strip() in ('Fig.','Fig') and (words[i+1].text or '').strip().startswith('2'):
-                  caption_y=float(w.attrib['yMin']); break
-          Path('/tmp/crop.txt').write_text(str(caption_y if caption_y is not None else 365.0))
-          PY
-          python3 - <<'PY'
-          from PIL import Image,ImageChops
-          capy=float(open('/tmp/crop.txt').read()); im=Image.open('/tmp/nanomech-page.png').convert('RGB'); scale=180/72
-          crop=im.crop((int(35*scale),max(0,int((capy-225)*scale)),int(577*scale),int((capy-4)*scale)))
-          bg=Image.new('RGB',crop.size,'white'); diff=ImageChops.difference(crop,bg).convert('L')
-          bbox=diff.point(lambda p:255 if p>10 else 0).getbbox()
-          if bbox: crop=crop.crop(bbox)
-          crop.save('images/papers/nanomech.png')
-          PY
 
           for f in images/papers/*.png; do
             convert "$f" -resize '1000x560>' -strip "$f"
