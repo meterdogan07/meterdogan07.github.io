@@ -12,7 +12,10 @@
     h1{font-size:32px;font-weight:400;margin:0 0 20px;text-align:center} h2{font-size:22px;font-weight:400;margin:0 0 14px}
     .wrap{max-width:850px;margin:0 auto;padding:24px 18px 50px}
     .hero{display:grid;grid-template-columns:3fr 2fr;gap:28px;align-items:center;padding:18px 0 24px}
-    .hero img.profile{width:88%;max-width:270px;border-radius:4px;display:block;margin:auto}
+    .photo-swap{position:relative;width:88%;max-width:270px;aspect-ratio:1/1;margin:auto}
+    .photo-swap img.profile{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:4px;display:block;transition:opacity .28s ease}
+    .photo-swap .profile-mosaic{opacity:0}
+    @media (hover:hover) and (pointer:fine){.photo-swap:hover .profile-original{opacity:0}.photo-swap:hover .profile-mosaic{opacity:1}}
     .links{text-align:center;margin-top:18px}
     .section{padding:22px 0}
     .research p{margin:9px 0}
@@ -22,7 +25,7 @@
     .title{font-size:16px;line-height:1.35;margin-bottom:4px}.authors,.venue{margin-bottom:3px}.highlight{color:#b30000;font-weight:700}.preprint{color:#666}
     .awards{margin:6px 0 0 18px;padding-left:18px}.awards li{margin:7px 0}
     .edu{display:grid;grid-template-columns:170px 1fr;gap:20px;align-items:center;padding:18px 0}.logo{width:140px;height:70px;display:flex;align-items:center;justify-content:center}.logo img{max-width:100%;max-height:100%;object-fit:contain}.logo.stanford img{max-width:80px;max-height:52px}
-    @media(max-width:650px){.hero{grid-template-columns:1fr}.hero .photo{order:-1}.hero img.profile{max-width:210px}.pub{grid-template-columns:1fr}.thumb{width:100%;height:180px}.edu{grid-template-columns:120px 1fr}.logo{width:110px;height:60px}}
+    @media(max-width:650px){.hero{grid-template-columns:1fr}.hero .photo{order:-1}.photo-swap{max-width:210px}.pub{grid-template-columns:1fr}.thumb{width:100%;height:180px}.edu{grid-template-columns:120px 1fr}.logo{width:110px;height:60px}}
   </style>
 </head>
 <body>
@@ -35,7 +38,12 @@
       <p>Before Stanford, I worked at <b>EPFL</b> with <b>Volkan Cevher</b> on language model pruning, compression, spectral interpretability (e.g., PCA/CCA), and non-Euclidean optimization methods for deep learning. I completed dual B.S. degrees in Electrical and Electronics Engineering and Computer Science at <b>Koç University</b>, where I worked with <b>Alper T. Erdogan</b> on deep learning theory and biologically plausible learning rules alternative to backpropagation.</p>
       <div class="links"><a href="mailto:merdogan@stanford.edu">Email</a> &nbsp;/&nbsp; <a href="https://github.com/meterdogan07">GitHub</a> &nbsp;/&nbsp; <a href="https://scholar.google.com/citations?user=h2nJVBgAAAAJ&hl=en">Google Scholar</a> &nbsp;/&nbsp; <a href="https://www.linkedin.com/in/meteerdogan/">LinkedIn</a></div>
     </div>
-    <div class="photo"><img class="profile" src="https://raw.githubusercontent.com/meterdogan07/meterdogan07.github.io/master/images/1719327591661x.jpg" alt="Mete Erdogan"></div>
+    <div class="photo">
+      <div class="photo-swap">
+        <img class="profile profile-original" src="https://raw.githubusercontent.com/meterdogan07/meterdogan07.github.io/master/images/1719327591661x.jpg" alt="Mete Erdogan">
+        <img class="profile profile-mosaic" src="https://raw.githubusercontent.com/meterdogan07/meterdogan07.github.io/master/images/profile-mosaic-hover.jpg" alt="Mosaic portrait of Mete Erdogan">
+      </div>
+    </div>
   </section>
 
   <section class="section research">
