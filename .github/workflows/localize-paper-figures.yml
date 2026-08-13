@@ -46,6 +46,7 @@ jobs:
             'https://arxiv.org/html/2602.01128v1/x1.png'
 
           curl -A "$UA" -L --retry 3 --fail 'https://arxiv.org/pdf/2605.30638' -o /tmp/sbd.pdf
+          curl -A "$UA" -L --retry 3 --fail 'https://arxiv.org/pdf/2601.09039' -o /tmp/tokenizers.pdf
           curl -A "$UA" -L --retry 3 --fail 'https://arxiv.org/pdf/2306.00563' -o /tmp/nanomech.pdf
 
           python3 - <<'PY'
@@ -73,12 +74,7 @@ jobs:
                   raise RuntimeError(f"Could not locate figure {figure_number} caption in {pdf_path}")
               page, caption = found
               margin = 28
-              clip = fitz.Rect(
-                  margin,
-                  max(0, caption.y0 - height_pt),
-                  page.rect.width - margin,
-                  max(1, caption.y0 - 3),
-              )
+              clip = fitz.Rect(margin, max(0, caption.y0-height_pt), page.rect.width-margin, max(1, caption.y0-3))
               pix = page.get_pixmap(matrix=fitz.Matrix(2.5, 2.5), clip=clip, alpha=False)
               im = Image.open(BytesIO(pix.tobytes('png'))).convert('RGB')
               bg = Image.new('RGB', im.size, 'white')
@@ -88,14 +84,10 @@ jobs:
                   im = im.crop(bbox)
               im.save(out_path)
 
-          # Actual paper figures, not decorative substitutes.
           extract_figure('/tmp/sbd.pdf', 'images/papers/sbd.png', 1, 255)
+          extract_figure('/tmp/tokenizers.pdf', 'images/papers/tokenizers.png', 1, 245)
           extract_figure('/tmp/nanomech.pdf', 'images/papers/nanomech.png', 2, 225, preferred_page=2)
           PY
-
-          fetch_fig images/papers/tokenizers.png \
-            'https://arxiv.org/html/2601.09039/x1.png' \
-            'https://arxiv.org/html/2601.09039v1/x1.png'
 
           fetch_fig images/papers/nbl.png \
             'https://arxiv.org/html/2505.21077/x1.png' \
