@@ -18,13 +18,14 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y poppler-utils imagemagick python3-pil
-          python3 -m pip install --user pymupdf numpy
+          python3 -m pip install --user pymupdf
 
-      - name: Rebuild thumbnails from paper sources
+      - name: Rebuild thumbnails from exact figure assets
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p images/papers-v2 /tmp/papersrc
+          rm -rf images/papers-v3
+          mkdir -p images/papers-v3 /tmp/papersrc
           UA='Mozilla/5.0'
 
           unpack_src () {
@@ -35,101 +36,134 @@ jobs:
           }
           render_pdf () {
             in="$1"; out="$2"
-            pdftoppm -png -singlefile -r 180 "$in" "$out" >/dev/null 2>&1
+            pdftoppm -png -singlefile -r 200 "$in" "$out" >/dev/null 2>&1
           }
 
           for id in 2602.01128 2601.09039 2505.21077 2506.01913 2306.00563; do unpack_src "$id"; done
 
-          # TS-DPO Figure 1: exact two source panels from the paper.
+          # TS-DPO Figure 1: its two exact source panels.
           render_pdf /tmp/papersrc/2602.01128/figs/pareto2.pdf /tmp/ts1
           render_pdf /tmp/papersrc/2602.01128/figs/pareto1.pdf /tmp/ts2
-          convert /tmp/ts1.png /tmp/ts2.png +append -background white -gravity center -splice 24x0 images/papers-v2/tsdpo.png
+          convert /tmp/ts1.png /tmp/ts2.png +append images/papers-v3/tsdpo.png
 
-          # Tokenizer Figure 1: exact two source panels.
+          # Tokenizer Figure 1: its two exact source panels.
           convert /tmp/papersrc/2601.09039/figures_new/scatter_plot_new.png \
                   /tmp/papersrc/2601.09039/figures_new/lang-robust-new.png \
-                  +append -background white -gravity center -splice 24x0 images/papers-v2/tokenizers.png
+                  +append images/papers-v3/tokenizers.png
 
-          # NBL Figure 1: exact original vector figure.
+          # NBL Figure 1: exact source vector graphic.
           render_pdf /tmp/papersrc/2505.21077/figures/fig1.pdf /tmp/nbl
-          cp /tmp/nbl.png images/papers-v2/nbl.png
+          cp /tmp/nbl.png images/papers-v3/nbl.png
 
-          # GGNC headline experiment figure: exact two source panels.
+          # GGNC headline Figure: its exact two source plots.
           render_pdf /tmp/papersrc/2506.01913/figs/cifar10_unconstrained.pdf /tmp/gg1
           render_pdf /tmp/papersrc/2506.01913/figs/cifar10_dual_norm.pdf /tmp/gg2
-          convert /tmp/gg1.png /tmp/gg2.png +append -background white -gravity center -splice 24x0 images/papers-v2/ggnc.png
+          convert /tmp/gg1.png /tmp/gg2.png +append images/papers-v3/ggnc.png
 
-          # Sensors method diagram: exact original Figure 2 artwork.
+          # Sensors Figure 2: exact method diagram.
           render_pdf /tmp/papersrc/2306.00563/diagrams_kalman.pdf /tmp/nano
-          cp /tmp/nano.png images/papers-v2/nanomech.png
+          cp /tmp/nano.png images/papers-v3/nanomech.png
 
-          # For figures partly drawn in LaTeX/TikZ, crop the complete rendered figure
-          # using the caption position plus the nearest real whitespace separator above it.
+          # SBD, EBD and Bosphorus contain figure elements drawn by TeX/TikZ/PGF.
+          # Extract only graphic/vector objects belonging to the figure, never body text.
           for id in 2605.30638 2504.11558 2405.04685; do
             curl -L --fail --retry 3 -A "$UA" "https://arxiv.org/pdf/$id" -o "/tmp/$id.pdf"
           done
 
           python3 - <<'PY'
           import pymupdf as fitz
-          from PIL import Image, ImageChops
-          from io import BytesIO
-          import numpy as np
+          from pathlib import Path
 
-          def exact_figure_crop(pdf_path, out_path, fig_no=1):
+          def find_caption(page, fig_no):
+              for needle in (f'Figure {fig_no}:', f'Figure {fig_no}.', f'Fig. {fig_no}', f'Figure {fig_no}'):
+                  hits=page.search_for(needle)
+                  if hits:
+                      return hits[0]
+              return None
+
+          def graphic_rects(page, caption_y):
+              rects=[]
+              # Raster images.
+              for info in page.get_image_info(xrefs=True):
+                  r=fitz.Rect(info['bbox'])
+                  if r.y1 < caption_y-1 and r.width > 8 and r.height > 8:
+                      rects.append(r)
+              # Vector/TikZ/PGF drawings.
+              for d in page.get_drawings():
+                  r=fitz.Rect(d['rect'])
+                  if r.y1 < caption_y-1 and r.width > 1 and r.height > 1:
+                      rects.append(r)
+              return rects
+
+          def cluster_nearest_to_caption(rects, caption_y, page_width):
+              if not rects:
+                  raise RuntimeError('no graphics found above caption')
+              # Remove page furniture and tiny rules; prefer substantial figure objects.
+              substantial=[r for r in rects if r.width > page_width*0.12 or r.height > 24]
+              if substantial:
+                  rects=substantial
+              # Start with graphic object closest to the caption.
+              seed=max(rects, key=lambda r:r.y1)
+              chosen=[seed]
+              union=fitz.Rect(seed)
+              changed=True
+              while changed:
+                  changed=False
+                  for r in rects:
+                      if r in chosen: continue
+                      # Include objects that overlap the figure vertically, or are within
+                      # a modest vertical gap and share horizontal territory with it.
+                      vertical_overlap=min(union.y1,r.y1)-max(union.y0,r.y0)
+                      vertical_gap=max(0, max(union.y0,r.y0)-min(union.y1,r.y1))
+                      horizontal_overlap=min(union.x1,r.x1)-max(union.x0,r.x0)
+                      horizontal_gap=max(0, max(union.x0,r.x0)-min(union.x1,r.x1))
+                      if vertical_overlap > -2 or (vertical_gap < 22 and horizontal_gap < page_width*0.08) or (horizontal_overlap > 0 and vertical_gap < 32):
+                          # Don't wander far into previous page content.
+                          new=union | r
+                          if caption_y-new.y0 < page_width*1.15:
+                              chosen.append(r); union=new; changed=True
+              return union
+
+          def extract(pdf_path, out_path, fig_no=1):
               doc=fitz.open(pdf_path)
-              found=None
-              needles=[f'Figure {fig_no}:',f'Figure {fig_no}.',f'Fig. {fig_no}',f'Figure {fig_no}']
-              for pi,page in enumerate(doc):
-                  for needle in needles:
-                      hits=page.search_for(needle)
-                      if hits:
-                          found=(pi,page,hits[0]); break
-                  if found: break
-              if not found:
-                  raise RuntimeError(f'caption not found: {pdf_path} fig {fig_no}')
-              pi,page,cap=found
-              scale=3.0
-              clip=fitz.Rect(18, 32, page.rect.width-18, max(34,cap.y0-2))
-              pix=page.get_pixmap(matrix=fitz.Matrix(scale,scale),clip=clip,alpha=False)
-              im=Image.open(BytesIO(pix.tobytes('png'))).convert('RGB')
-              a=np.asarray(im)
-              gray=(0.299*a[:,:,0]+0.587*a[:,:,1]+0.114*a[:,:,2])
-              row=(gray<242).sum(axis=1)
-              blank=row <= max(2,int(im.width*0.0015))
-              bands=[]; s=None
-              for i,b in enumerate(blank):
-                  if b and s is None: s=i
-                  if (not b or i==len(blank)-1) and s is not None:
-                      e=i if not b else i+1
-                      if e-s>=12: bands.append((s,e))
-                      s=None
-              bottom=im.height
-              candidates=[b for b in bands if b[1] < bottom-12]
-              if candidates:
-                  top=candidates[-1][1]
-              else:
-                  nonblank=np.where(row>2)[0]
-                  top=int(nonblank[0]) if len(nonblank) else 0
-              crop=im.crop((0,top,im.width,bottom))
-              bg=Image.new('RGB',crop.size,'white')
-              diff=ImageChops.difference(crop,bg).convert('L')
-              bbox=diff.point(lambda p:255 if p>10 else 0).getbbox()
-              if bbox: crop=crop.crop(bbox)
-              crop.save(out_path)
+              target=None
+              for page in doc:
+                  cap=find_caption(page, fig_no)
+                  if cap:
+                      target=(page,cap); break
+              if target is None:
+                  raise RuntimeError(f'Figure {fig_no} caption not found in {pdf_path}')
+              page,cap=target
+              rects=graphic_rects(page,cap.y0)
+              box=cluster_nearest_to_caption(rects,cap.y0,page.rect.width)
+              # Add nearby text labels/subfigure letters that sit inside/just around graphics.
+              text_blocks=page.get_text('blocks')
+              expanded=fitz.Rect(box)
+              for b in text_blocks:
+                  r=fitz.Rect(b[:4])
+                  if r.y1 < cap.y0-1 and r.y0 >= box.y0-12 and r.y1 <= box.y1+12 and r.x1 >= box.x0-15 and r.x0 <= box.x1+15:
+                      expanded |= r
+              expanded.x0=max(0,expanded.x0-5); expanded.y0=max(0,expanded.y0-5)
+              expanded.x1=min(page.rect.width,expanded.x1+5); expanded.y1=min(cap.y0-1,expanded.y1+5)
+              pix=page.get_pixmap(matrix=fitz.Matrix(3,3),clip=expanded,alpha=False)
+              pix.save(out_path)
+              print(pdf_path, 'page', page.number+1, 'caption_y', cap.y0, 'box', expanded)
 
-          exact_figure_crop('/tmp/2605.30638.pdf','images/papers-v2/sbd.png',1)
-          exact_figure_crop('/tmp/2504.11558.pdf','images/papers-v2/ebd.png',1)
-          exact_figure_crop('/tmp/2405.04685.pdf','images/papers-v2/bosphorus.png',1)
+          extract('/tmp/2605.30638.pdf','images/papers-v3/sbd.png',1)
+          extract('/tmp/2504.11558.pdf','images/papers-v3/ebd.png',1)
+          extract('/tmp/2405.04685.pdf','images/papers-v3/bosphorus.png',1)
           PY
 
-          for f in images/papers-v2/*.png; do
-            convert "$f" -resize '1400x700>' -strip "$f"
+          # Normalize size only; do not crop figure content.
+          for f in images/papers-v3/*.png; do
+            convert "$f" -trim +repage -resize '1400x700>' -background white -alpha remove -strip "$f"
           done
+          identify images/papers-v3/*.png
 
       - name: Commit rebuilt thumbnails
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -- images/papers-v2
-          git commit -m 'Add exact publication thumbnail assets'
+          git add -- images/papers-v3
+          git commit -m 'Add source-accurate publication thumbnails'
           git push origin HEAD:master
